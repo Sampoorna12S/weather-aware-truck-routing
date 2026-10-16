@@ -1,0 +1,55 @@
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.stacked {
+  grid-template-columns: 1fr 1fr;
+}
+
+.stacked > :nth-child(1),
+.stacked > :nth-child(2),
+.stacked > :last-child {
+  grid-column: 1 / -1;
+}
+
+.inline {
+  grid-template-columns: minmax(150px, 1.3fr) minmax(150px, 1.3fr) minmax(170px, 1fr) minmax(110px, 0.7fr) minmax(110px, 0.7fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.inline .actions {
+  align-self: end;
+  flex-wrap: nowrap;
+}
+
+.submitHint {
+  flex-basis: 100%;
+  font-size: 12.5px;
+  color: var(--color-muted);
+}
+
+.inline .submitHint {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .inline {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .stacked,
+  .inline {
+    grid-template-columns: 1fr;
+  }
+}

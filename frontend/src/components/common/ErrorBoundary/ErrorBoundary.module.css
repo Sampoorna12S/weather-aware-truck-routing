@@ -1,0 +1,14 @@
+.fallback {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  margin: 24px;
+  padding: 20px;
+  border: 1px solid #f4b8b1;
+  border-radius: var(--radius);
+  background: var(--color-danger-soft);
+}
+
+.fallback h2 {
+  font-size: 18px;
+}

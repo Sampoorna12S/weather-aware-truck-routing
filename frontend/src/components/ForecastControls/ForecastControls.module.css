@@ -1,0 +1,86 @@
+.bar {
+  display: grid;
+  gap: 8px;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 18px;
+}
+
+.toggle,
+.layers label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sliderBlock {
+  display: grid;
+  gap: 4px;
+}
+
+.sliderBlock label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.when {
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.slider {
+  width: 100%;
+}
+
+.ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.note {
+  font-size: 12.5px;
+  color: var(--color-muted);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 6px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.scale {
+  font-size: 12.5px;
+  color: var(--color-muted);
+}

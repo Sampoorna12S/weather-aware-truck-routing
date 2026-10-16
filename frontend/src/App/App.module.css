@@ -1,0 +1,11 @@
+.fatal {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  width: min(520px, 100% - 32px);
+  margin: 15vh auto 0;
+  padding: 24px;
+  border: 1px solid #f4b8b1;
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-soft);
+}

@@ -1,0 +1,66 @@
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid;
+  border-radius: var(--radius);
+  font-size: 14px;
+}
+
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  display: block;
+}
+
+.action {
+  flex: none;
+}
+
+.info {
+  background: var(--color-primary-soft);
+  border-color: #c4d4ff;
+}
+.info .icon {
+  background: var(--color-primary);
+}
+
+.warning {
+  background: var(--color-warning-soft);
+  border-color: #f1d58b;
+}
+.warning .icon {
+  background: #b7791f;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border-color: #f4b8b1;
+}
+.error .icon {
+  background: var(--color-danger);
+}
+
+.success {
+  background: var(--color-success-soft);
+  border-color: #a9dcc0;
+}
+.success .icon {
+  background: var(--color-success);
+}

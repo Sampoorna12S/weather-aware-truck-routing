@@ -1,0 +1,107 @@
+.page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-bg);
+}
+
+.workspace {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(350px, 420px) minmax(0, 1fr);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 0;
+  padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  border-right: 1px solid var(--color-border);
+  background: linear-gradient(180deg, #f5f8fc 0%, #edf2f8 100%);
+  scrollbar-color: #aab7c8 transparent;
+  scrollbar-width: thin;
+}
+
+.mapColumn {
+  display: grid;
+  grid-template-rows: minmax(280px, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #e8edf2;
+}
+
+.warnings {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.routeListHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 3px 2px -4px;
+}
+
+.routeListHeader h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+
+.routeListHeader span {
+  color: var(--color-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tripMeta {
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 960px) {
+  .page {
+    position: relative;
+    inset: auto;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(52vh, 1fr);
+    overflow: visible;
+  }
+
+  .sidebar {
+    max-height: 48vh;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .mapColumn {
+    min-height: 52vh;
+    grid-template-rows: minmax(280px, 1fr) auto;
+  }
+}

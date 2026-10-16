@@ -1,0 +1,46 @@
+.bar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    'brand form'
+    'status status';
+  gap: 10px 20px;
+  align-items: start;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  z-index: 20;
+}
+
+.brand {
+  grid-area: brand;
+  padding-top: 18px;
+}
+
+.form {
+  grid-area: form;
+  min-width: 0;
+}
+
+.status {
+  grid-area: status;
+}
+
+.status:empty {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .bar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'brand'
+      'form'
+      'status';
+  }
+  .brand {
+    padding-top: 0;
+  }
+}
