@@ -1,5 +1,6 @@
 import { ANALYSIS_TIMEOUT_MS } from '../config/constants';
 import { request } from './httpClient';
+import { fetchRouteWeather } from './weatherApi';
 
 const toLocation = ({ label, latitude, longitude }) => ({ label, latitude, longitude });
 
@@ -15,10 +16,22 @@ export function buildAnalyzePayload(inputs) {
 }
 
 export function analyzeTrip(inputs, { signal } = {}) {
-  return request('/api/trips/analyze/', {
+  return request('/api/trips/prepare/', {
     method: 'POST',
     body: buildAnalyzePayload(inputs),
     signal,
     timeoutMs: ANALYSIS_TIMEOUT_MS,
+  }).then(async (prepared) => {
+    const forecast = await fetchRouteWeather(prepared.weather, { signal });
+    return request('/api/trips/score/', {
+      method: 'POST',
+      body: {
+        token: prepared.token,
+        weather: forecast.weather,
+        provider_error: forecast.providerError,
+      },
+      signal,
+      timeoutMs: ANALYSIS_TIMEOUT_MS,
+    });
   });
 }

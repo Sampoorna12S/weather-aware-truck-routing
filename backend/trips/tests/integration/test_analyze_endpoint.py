@@ -1,3 +1,6 @@
+import json
+from datetime import datetime, timedelta
+
 import httpx
 
 from .conftest import OSRM_URL, WEATHER_URL, osrm_ok, osrm_route, trip_payload, weather_handler
@@ -90,6 +93,173 @@ def test_weather_rate_limit_is_reported_as_retryable_guidance(mock_api, analyze)
     assert "rate limiting" in warning["message"]
     assert "re-analyze" in warning["message"]
     assert body["routes"][0]["checkpoints"][0]["overall_risk"] == "UNKNOWN"
+
+
+def test_browser_weather_prepare_and_score_flow(mock_api, client):
+    mock_api.get(url__startswith=OSRM_URL).mock(
+        return_value=httpx.Response(200, json=osrm_ok([osrm_route(0)]))
+    )
+    prepared_response = client.post(
+        "/api/trips/prepare/",
+        data=json.dumps(trip_payload()),
+        content_type="application/json",
+    )
+    assert prepared_response.status_code == 200
+    prepared = prepared_response.json()
+    assert prepared["weather"]["points"]
+
+    start = datetime.fromisoformat(prepared["weather"]["start_utc"])
+    end = datetime.fromisoformat(prepared["weather"]["end_utc"])
+    times = []
+    current = start
+    while current <= end:
+        times.append(int(current.timestamp()))
+        current += timedelta(hours=1)
+    weather = [
+        {
+            "latitude": latitude,
+            "longitude": longitude,
+            "times": times,
+            "wind_mph": [10.0] * len(times),
+            "rain_inches_per_hour": [0.0] * len(times),
+            "snow_inches_per_hour": [0.0] * len(times),
+        }
+        for latitude, longitude in prepared["weather"]["points"]
+    ]
+
+    response = client.post(
+        "/api/trips/score/",
+        data=json.dumps({"token": prepared["token"], "weather": weather}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "COMPLETE"
+    assert body["routes"][0]["checkpoints"][0]["overall_risk"] == "LOW"
+    assert body["recommendation"]["route_id"] == "route_a"
+
+
+def test_browser_weather_keeps_existing_risk_rules_and_route_ranking(mock_api, client):
+    routes = [osrm_route(0), osrm_route(0.3), osrm_route(-0.3)]
+    wind_for_point = lambda latitude, longitude: 40.0 if latitude > 40.2 else 5.0
+    mock_happy(mock_api, routes=routes, wind=wind_for_point)
+    inputs = trip_payload(load_weight_lb=45000)
+
+    legacy_body = client.post(
+        "/api/trips/analyze/",
+        data=json.dumps(inputs),
+        content_type="application/json",
+    ).json()
+    prepared = client.post(
+        "/api/trips/prepare/",
+        data=json.dumps(inputs),
+        content_type="application/json",
+    ).json()
+
+    start = datetime.fromisoformat(prepared["weather"]["start_utc"])
+    end = datetime.fromisoformat(prepared["weather"]["end_utc"])
+    times = []
+    current = start
+    while current <= end:
+        times.append(int(current.timestamp()))
+        current += timedelta(hours=1)
+    browser_weather = [
+        {
+            "latitude": latitude,
+            "longitude": longitude,
+            "times": times,
+            "wind_mph": [wind_for_point(latitude, longitude)] * len(times),
+            "rain_inches_per_hour": [0.0] * len(times),
+            "snow_inches_per_hour": [0.0] * len(times),
+        }
+        for latitude, longitude in prepared["weather"]["points"]
+    ]
+    browser_body = client.post(
+        "/api/trips/score/",
+        data=json.dumps({"token": prepared["token"], "weather": browser_weather}),
+        content_type="application/json",
+    ).json()
+
+    def risk_result(body):
+        return {
+            "routes": [
+                {
+                    "id": route["id"],
+                    "rank": route["rank"],
+                    "risk_summary": route["risk_summary"],
+                    "checkpoints": [
+                        (checkpoint["overall_risk"], checkpoint["condition_risks"])
+                        for checkpoint in route["checkpoints"]
+                    ],
+                }
+                for route in body["routes"]
+            ],
+            "recommendation": body["recommendation"],
+        }
+
+    assert risk_result(browser_body) == risk_result(legacy_body)
+
+
+def test_browser_weather_score_rejects_unprepared_coordinates(mock_api, client):
+    mock_api.get(url__startswith=OSRM_URL).mock(
+        return_value=httpx.Response(200, json=osrm_ok([osrm_route(0)]))
+    )
+    prepared = client.post(
+        "/api/trips/prepare/",
+        data=json.dumps(trip_payload()),
+        content_type="application/json",
+    ).json()
+    response = client.post(
+        "/api/trips/score/",
+        data=json.dumps(
+            {
+                "token": prepared["token"],
+                "weather": [
+                    {
+                        "latitude": 0,
+                        "longitude": 0,
+                        "times": [],
+                        "wind_mph": [],
+                        "rain_inches_per_hour": [],
+                        "snow_inches_per_hour": [],
+                    }
+                ],
+            }
+        ),
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_browser_weather_rate_limit_scores_missing_data_as_unknown(mock_api, client):
+    mock_api.get(url__startswith=OSRM_URL).mock(
+        return_value=httpx.Response(200, json=osrm_ok([osrm_route(0)]))
+    )
+    prepared = client.post(
+        "/api/trips/prepare/",
+        data=json.dumps(trip_payload()),
+        content_type="application/json",
+    ).json()
+
+    response = client.post(
+        "/api/trips/score/",
+        data=json.dumps(
+            {
+                "token": prepared["token"],
+                "weather": [],
+                "provider_error": "rate_limited",
+            }
+        ),
+        content_type="application/json",
+    )
+
+    body = response.json()
+    assert response.status_code == 200
+    assert any(warning["code"] == "WEATHER_RATE_LIMITED" for warning in body["warnings"])
+    assert body["routes"][0]["checkpoints"][0]["overall_risk"] == "UNKNOWN"
+    assert body["recommendation"]["route_id"] is None
 
 
 def test_missing_segment_annotations_still_gives_etas(mock_api, analyze):

@@ -10,6 +10,9 @@ export const GEOCODE_MIN_CHARS = 3;
 export const GEOCODE_DEBOUNCE_MS = 300;
 export const ANALYSIS_TIMEOUT_MS = 90000;
 export const GEOCODE_TIMEOUT_MS = 12000;
+export const WEATHER_BROWSER_BATCH_SIZE = 40;
+export const WEATHER_BROWSER_CONCURRENCY = 4;
+export const WEATHER_FETCH_TIMEOUT_MS = 20000;
 
 export const RISK_ORDER = ['LOW', 'MODERATE', 'HIGH', 'SEVERE', 'NO_TRAVEL', 'UNKNOWN'];
 

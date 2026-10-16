@@ -50,7 +50,8 @@ class WeatherService:
         batch = WeatherBatch(series=series)
         chunks = [missing[i : i + cfg.WEATHER_BATCH_SIZE] for i in range(0, len(missing), cfg.WEATHER_BATCH_SIZE)]
         if chunks:
-            with ThreadPoolExecutor(max_workers=min(cfg.WEATHER_MAX_WORKERS, len(chunks))) as pool:
+            provider_limit = getattr(self.provider, "max_concurrent_requests", cfg.WEATHER_MAX_WORKERS)
+            with ThreadPoolExecutor(max_workers=min(cfg.WEATHER_MAX_WORKERS, provider_limit, len(chunks))) as pool:
                 outcomes = list(pool.map(lambda c: self._fetch_chunk(c, start_utc, end_utc), chunks))
             for chunk, outcome in zip(chunks, outcomes):
                 if isinstance(outcome, WeatherProviderError):

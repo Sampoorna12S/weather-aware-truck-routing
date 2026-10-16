@@ -5,7 +5,7 @@ React + Django app that helps a truck driver compare up to three route alternati
 ## What it does
 
 1. Driver enters origin, destination, departure time, load weight, and checkpoint interval (10 / 25 / 50 miles).
-2. The backend requests route alternatives, samples weather at checkpoints using each checkpoint’s ETA, classifies risk, and ranks routes.
+2. Django obtains route alternatives and prepares checkpoint/corridor coordinates. The browser fetches hourly weather for those coordinates directly from Open-Meteo, then posts the forecast samples back to Django for risk classification and ranking.
 3. The results workspace shows route cards, a recommendation, an interactive map, checkpoint details, and a 0–48 hour corridor weather overlay.
 
 Stage 1 is the trip form only. The map is not mounted until analysis starts.
@@ -16,7 +16,13 @@ Stage 1 is the trip form only. The map is not mounted until analysis starts.
 - Backend: Django, httpx
 - Routing: public OSRM (default) or OpenRouteService (`driving-hgv` with an API key)
 - Geocoding: Photon for address/place search, with Open-Meteo city search as a fallback when Photon is unavailable
-- Weather: Open-Meteo hourly wind, precipitation, and snowfall
+- Weather: Open-Meteo hourly wind, precipitation, and snowfall fetched directly by the browser
+
+## Weather request path
+
+Weather forecasts are fetched by the visitor's browser rather than Render. This avoids putting all forecast traffic behind Render's shared outbound IP, which was receiving Open-Meteo HTTP 429 responses. The browser requests multiple coordinates per call; Django still owns route generation, checkpoint ETAs, risk rules, route ranking, and the final response. A signed, short-lived token binds submitted weather data to the route preparation request.
+
+This is appropriate for a non-commercial demo. Open-Meteo's free API is non-commercial, rate-limited, and has no uptime guarantee. Browser-supplied weather can also be modified by a user, so the result is informational and must not be treated as certified truck-safety advice. Missing or incomplete weather remains UNKNOWN, never safe.
 
 Free-tier providers have rate limits and no uptime guarantee. Confirm current terms before a public deployment.
 
@@ -34,6 +40,8 @@ python manage.py runserver 127.0.0.1:8000
 ```
 
 Optional: set `ROUTING_PROVIDER=ors` and `ORS_API_KEY` in `backend/.env` for truck-profile routing.
+
+The browser forecast uses Open-Meteo and needs no API key. To override its base URL for local testing, set `VITE_WEATHER_BASE_URL` in `frontend/.env` and restart Vite. The backend-only `/api/trips/analyze/` endpoint remains available for compatibility; the React app uses `/api/trips/prepare/` and `/api/trips/score/`, so its forecast requests originate in the browser.
 
 ### Frontend
 
@@ -59,7 +67,7 @@ Commit and push the project, including `render.yaml` and `frontend/vercel.json`.
 2. In the Blueprint settings, replace `https://your-vercel-project.vercel.app` in `CORS_ALLOWED_ORIGINS` with the exact Vercel production origin after you create the Vercel project (step 3). An origin is just scheme + hostname: no path or trailing slash.
 3. Wait for the service to deploy. Its health check is `https://<render-service>.onrender.com/api/health/`; a successful response is `{"status":"ok"}`.
 
-Render generates `DJANGO_SECRET_KEY`. `DJANGO_DEBUG` is disabled. No database or provider secret is needed for the default OSRM, Photon, Open-Meteo, and OpenFreeMap endpoints. For OpenRouteService instead, set `ROUTING_PROVIDER=ors` and add `ORS_API_KEY` as a secret in the Render service environment; redeploy after changing environment variables.
+Render generates `DJANGO_SECRET_KEY`. `DJANGO_DEBUG` is disabled. No database or weather provider secret is needed for browser-based Open-Meteo weather requests, default OSRM, Photon, or OpenFreeMap. For OpenRouteService instead, set `ROUTING_PROVIDER=ors` and add `ORS_API_KEY` as a secret in the Render service environment; redeploy after changing environment variables.
 
 ### 3. Deploy the frontend on Vercel
 
@@ -82,6 +90,7 @@ In Render’s service environment, set `CORS_ALLOWED_ORIGINS` to the exact front
 | Vercel frontend | `VITE_API_BASE_URL` | Render service origin, without a trailing slash. |
 | Render API, optional | `ROUTING_PROVIDER` | `ors` to use OpenRouteService instead of OSRM. |
 | Render API, optional | `ORS_API_KEY` | Secret key required only when `ROUTING_PROVIDER=ors`. |
+| Vercel frontend, optional | `VITE_WEATHER_BASE_URL` | Open-Meteo base URL override; normally leave unset. It is public configuration, not a secret. |
 
 Render's free web services may spin down when idle, so the first API request after inactivity may take longer. The app uses public routing, geocoding, weather, and map services; those providers can rate-limit requests and do not guarantee uptime. The default OSRM profile is car routing, not HGV-restricted routing.
 
@@ -125,6 +134,6 @@ Ranking (lexicographic): routes without No Travel first, then fewest Severe mile
 ## Known limitations
 
 - Public OSRM is car routing, not HGV-restricted.
-- Photon and Open-Meteo public endpoints may throttle, especially from shared hosting IPs. The geocoder falls back to Open-Meteo place search when Photon is unreachable, which may be less precise for street addresses. Forecast HTTP 429 responses are retried using the provider's `Retry-After` value (bounded to 30 seconds); recurring limits require lower request volume or a weather provider plan with dedicated quota.
+- Photon and Open-Meteo public endpoints may throttle. The browser weather path uses each visitor's network instead of Render's shared egress IP, but visitors still share Open-Meteo's public service limits. The geocoder falls back to Open-Meteo place search when Photon is unreachable, which may be less precise for street addresses. The legacy server-side forecast path retries HTTP 429 responses using `Retry-After` (bounded to 30 seconds).
 - OpenFreeMap tiles are used without a private key; they can fail or change.
 - Analysis is on-demand and stateless (no trip database).
