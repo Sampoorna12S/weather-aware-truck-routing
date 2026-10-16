@@ -78,6 +78,20 @@ def test_weather_batch_failure_keeps_routes_and_flags_unknown(mock_api, analyze)
     assert body["recommendation"]["route_id"] is None  # never claim safety without data
 
 
+def test_weather_rate_limit_is_reported_as_retryable_guidance(mock_api, analyze):
+    mock_api.get(url__startswith=OSRM_URL).mock(
+        return_value=httpx.Response(200, json=osrm_ok([osrm_route(0)]))
+    )
+    mock_api.get(WEATHER_URL).mock(return_value=httpx.Response(429))
+
+    body = analyze(trip_payload()).json()
+
+    warning = next(item for item in body["warnings"] if item["code"] == "WEATHER_RATE_LIMITED")
+    assert "rate limiting" in warning["message"]
+    assert "re-analyze" in warning["message"]
+    assert body["routes"][0]["checkpoints"][0]["overall_risk"] == "UNKNOWN"
+
+
 def test_missing_segment_annotations_still_gives_etas(mock_api, analyze):
     mock_happy(mock_api, routes=[osrm_route(0, with_annotations=False)])
     cps = analyze(trip_payload()).json()["routes"][0]["checkpoints"]

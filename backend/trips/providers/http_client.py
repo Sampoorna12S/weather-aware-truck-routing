@@ -1,6 +1,8 @@
 """Shared outbound HTTP client: explicit timeouts, bounded retries, safe error mapping."""
 import logging
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 import httpx
 
@@ -22,7 +24,13 @@ def _retry_delay(attempt, response):
         try:
             delay = max(delay, float(retry_after))
         except ValueError:
-            pass
+            try:
+                retry_at = parsedate_to_datetime(retry_after)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                delay = max(delay, (retry_at - datetime.now(timezone.utc)).total_seconds())
+            except (TypeError, ValueError, OverflowError):
+                pass
     return min(delay, cfg.HTTP_MAX_RETRY_AFTER_SECONDS)
 
 

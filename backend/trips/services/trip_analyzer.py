@@ -71,11 +71,21 @@ class TripAnalyzer:
         checkpoint_points = [_checkpoint_key(cp) for cps in checkpoints_by_route.values() for cp in cps]
         batch = self.weather.fetch(checkpoint_points + corridor_points, base, end)
         if batch.failed_points:
+            rate_limited = batch.last_error and batch.last_error.kind == "rate_limited"
             warnings.append(
                 {
-                    "code": "WEATHER_PARTIAL" if not batch.all_failed else "WEATHER_UNAVAILABLE",
-                    "message": "Weather data could not be loaded for some locations. "
-                    "Affected checkpoints are marked unknown, not safe.",
+                    "code": (
+                        "WEATHER_RATE_LIMITED"
+                        if rate_limited
+                        else "WEATHER_PARTIAL" if not batch.all_failed else "WEATHER_UNAVAILABLE"
+                    ),
+                    "message": (
+                        "The weather service is rate limiting requests. Wait a little and re-analyze. "
+                        "Affected checkpoints are marked unknown, not safe."
+                        if rate_limited
+                        else "Weather data could not be loaded for some locations. "
+                        "Affected checkpoints are marked unknown, not safe."
+                    ),
                 }
             )
 

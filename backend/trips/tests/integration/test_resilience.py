@@ -47,6 +47,13 @@ def test_429_is_retried_with_retry_after_then_succeeds(mock_api, analyze, _no_sl
     assert route.call_count == 2 and _no_sleep[0] == 2.0
 
 
+def test_retry_after_is_honored_with_a_bounded_maximum(monkeypatch):
+    monkeypatch.setattr(http_client.cfg, "HTTP_MAX_RETRY_AFTER_SECONDS", 30.0)
+    response = httpx.Response(429, headers={"Retry-After": "60"})
+
+    assert http_client._retry_delay(0, response) == 30.0
+
+
 def test_persistent_429_maps_to_retryable_503(mock_api, analyze):
     mock_api.get(url__startswith=OSRM_URL).mock(return_value=httpx.Response(429))
     res = analyze(trip_payload())

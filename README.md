@@ -125,6 +125,6 @@ Ranking (lexicographic): routes without No Travel first, then fewest Severe mile
 ## Known limitations
 
 - Public OSRM is car routing, not HGV-restricted.
-- Photon and Open-Meteo public endpoints may throttle; the geocoder falls back to Open-Meteo place search when Photon is unreachable, which may be less precise for street addresses.
+- Photon and Open-Meteo public endpoints may throttle, especially from shared hosting IPs. The geocoder falls back to Open-Meteo place search when Photon is unreachable, which may be less precise for street addresses. Forecast HTTP 429 responses are retried using the provider's `Retry-After` value (bounded to 30 seconds); recurring limits require lower request volume or a weather provider plan with dedicated quota.
 - OpenFreeMap tiles are used without a private key; they can fail or change.
 - Analysis is on-demand and stateless (no trip database).
