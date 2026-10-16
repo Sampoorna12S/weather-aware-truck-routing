@@ -9,6 +9,7 @@ import respx
 OSRM_URL = "https://router.project-osrm.org/route/v1/driving/"
 WEATHER_URL = "https://api.open-meteo.com/v1/forecast"
 PHOTON_URL = "https://photon.komoot.io/api/"
+GEOCODING_FALLBACK_URL = "https://geocoding-api.open-meteo.com/v1/search"
 
 
 def osrm_route(offset_lat=0.0, miles=120.0, with_annotations=True):

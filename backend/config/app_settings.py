@@ -22,6 +22,9 @@ ORS_API_KEY = os.getenv("ORS_API_KEY", "")
 ORS_PROFILE = os.getenv("ORS_PROFILE", "driving-hgv")
 WEATHER_BASE_URL = os.getenv("WEATHER_BASE_URL", "https://api.open-meteo.com")
 PHOTON_BASE_URL = os.getenv("PHOTON_BASE_URL", "https://photon.komoot.io")
+GEOCODING_FALLBACK_URL = os.getenv(
+    "GEOCODING_FALLBACK_URL", "https://geocoding-api.open-meteo.com/v1/search"
+)
 OUTBOUND_USER_AGENT = os.getenv(
     "OUTBOUND_USER_AGENT", "weather-aware-truck-routing/1.0 (assessment project)"
 )

@@ -1,6 +1,6 @@
 import httpx
 
-from .conftest import PHOTON_URL
+from .conftest import GEOCODING_FALLBACK_URL, PHOTON_URL
 
 PHOTON_PAYLOAD = {
     "features": [
@@ -49,10 +49,45 @@ def test_results_are_cached(mock_api, client):
 
 def test_provider_failure_is_a_retryable_error(mock_api, client):
     mock_api.get(url__startswith=PHOTON_URL).mock(return_value=httpx.Response(503))
+    mock_api.get(GEOCODING_FALLBACK_URL).mock(return_value=httpx.Response(503))
     res = client.get("/api/geocode/", {"q": "Denver"})
     assert res.status_code == 503 and res.json()["error"] == {
         **res.json()["error"], "code": "GEOCODING_PROVIDER_UNAVAILABLE", "retryable": True,
     }
+
+
+def test_photon_connection_failure_falls_back_to_open_meteo(mock_api, client):
+    mock_api.get(url__startswith=PHOTON_URL).mock(side_effect=httpx.ConnectError("connection refused"))
+    mock_api.get(GEOCODING_FALLBACK_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "results": [
+                    {
+                        "name": "Madurai",
+                        "latitude": 9.919,
+                        "longitude": 78.11953,
+                        "admin1": "Tamil Nadu",
+                        "country": "India",
+                    }
+                ]
+            },
+        )
+    )
+
+    response = client.get("/api/geocode/", {"q": "Madurai"})
+
+    assert response.status_code == 200
+    assert response.json()["results"] == [
+        {
+            "label": "Madurai, Tamil Nadu, India",
+            "name": "Madurai",
+            "region": "Tamil Nadu",
+            "country": "India",
+            "latitude": 9.919,
+            "longitude": 78.11953,
+        }
+    ]
 
 
 def test_malformed_provider_payload(mock_api, client):

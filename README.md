@@ -15,7 +15,7 @@ Stage 1 is the trip form only. The map is not mounted until analysis starts.
 - Frontend: React 19, Vite, MapLibre GL JS, OpenFreeMap tiles
 - Backend: Django, httpx
 - Routing: public OSRM (default) or OpenRouteService (`driving-hgv` with an API key)
-- Geocoding: Photon (proxied through Django; not Nominatim autocomplete)
+- Geocoding: Photon for address/place search, with Open-Meteo city search as a fallback when Photon is unavailable
 - Weather: Open-Meteo hourly wind, precipitation, and snowfall
 
 Free-tier providers have rate limits and no uptime guarantee. Confirm current terms before a public deployment.
@@ -125,6 +125,6 @@ Ranking (lexicographic): routes without No Travel first, then fewest Severe mile
 ## Known limitations
 
 - Public OSRM is car routing, not HGV-restricted.
-- Photon and Open-Meteo public endpoints may throttle.
+- Photon and Open-Meteo public endpoints may throttle; the geocoder falls back to Open-Meteo place search when Photon is unreachable, which may be less precise for street addresses.
 - OpenFreeMap tiles are used without a private key; they can fail or change.
 - Analysis is on-demand and stateless (no trip database).
